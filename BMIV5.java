@@ -1,91 +1,101 @@
 package bmi;
 import java.text.DecimalFormat;
-import java.util.Scanner;
 import java.lang.Math;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+/*
+ * TBD: Document
+ */
 public class BMIV5 {
-    //main method for function calls
-    public static final DecimalFormat df = new DecimalFormat("#.00");
-    
    
-   
-    // helper function to calculate BMI given height and weight
-    public static double getBodyMassIndex(double height, double weight){
-       
-        double BMI = 0;
-   
-        BMI = weight / Math.pow(height, 2) * 703;
-        
-        return BMI;
+	/**
+	 * TBD
+	 * @param height
+	 * @param weight
+	 * @return
+	 */
 
+    public static double getBodyMassIndex(double height, double weight) {
+        double BMI = weight / Math.pow(height, 2) * 703;
+        return BMI;
     }
     
-    // helper function to calculate weightClass based on the BMI.
-    public static String weightClass(double BMI){
+    /**
+     * 
+     * @param BMI
+     * @return
+     */
+
+    public static String weightClass(double BMI) {
         String classWeight;
-        if(BMI < 18.5){
+        if (BMI < 18.5) {
             classWeight = "underweight";
-        }
-        else if(BMI < 24.9 && BMI> 18.5){
+        } else if (BMI < 24.9 && BMI > 18.5) {
             classWeight = "normal";
-        }
-        else if(BMI < 29.9 && BMI> 24.9){
+        } else if (BMI < 29.9 && BMI > 24.9) {
             classWeight = "overweight";
-        }
-        else{
+        } else {
             classWeight = "obese";
         }
         return classWeight;
     }
+
     
-
-	
-	
+    /**
+     * This method is doing three things
+     * 1. Establish the conneciton to the database
+     * 2. Get the height and weight from the database
+     * 3. For each height and weight, find the BMI and BMI classificaiton.
+     * 4. Update the database with BMI and classificaiton.
+     * @param args
+     */
     public static void main(String[] args) {
-        // 1. connect to the database
-    	
-    	Connection db_connection = null;
-		ResultSet result_set = null;
-		try {
-
-			// Step 1: Get the connection object for the database
-			String url = "jdbc:mysql://localhost/bmiv5";
-			String user = "root";
-			String password = "";
-			db_connection = DriverManager.getConnection(url, user, password);
-			System.out.println("Success: Connection established");
-			
-			
-			// Step 2: Create a statement object
-			Statement statement_object = db_connection.createStatement();
-			
-			// Step 3: Execute SQL query to fetch the height and weight
-			// Set the query string you want to run on the database
-			// If this query is not running in PhpMyAdmin, then it will not run here
-		//	result_set = statement_object.executeQuery(sqlQueryStr);
-
-			
-
-		}
-		
-		catch (Exception ex) {
-			ex.printStackTrace();
-		} // end catch
-
-    	// 2. SELECT (get/query) the information from the table bodymetrics (height and weight)
-    	
-    	// 3. call our helper function to calculate BMI
-    	
-    	// 4. call our helpr function to calculate the weightClass
-    	
-    	// 5. UPDATE (push) the BMI and weightClass for each row of the table into the database.
-    	
-    	// 6. Once the update is successful, print a confirmation message.
-    	System.out.println("BMI and weightClass are updated for all 600 people");
+        try (
+        	 Connection db_connection = DriverManager.getConnection("jdbc:mysql://localhost/bmiv5", "root", "");
+             Statement statement_object = db_connection.createStatement();
+        	 // all the rows returned by SELECT query are now in the Result Set.
+             ResultSet result_set = statement_object.executeQuery("SELECT id, height, weight FROM bodymetrics");
+            ) 
+        {
+            // Loop through the Result Set
+            while (result_set.next()) {
+                int id = result_set.getInt("id");
+                double height = result_set.getDouble("height");
+                double weight = result_set.getDouble("weight");
+                System.out.println("id: " + id + " height: " + height + " weight: " + weight);
+                
+                // find the bmi
+                double bmi = getBodyMassIndex(height, weight);
+                
+                // find the bmi classification
+                String bmi_classification = weightClass(bmi);
+                
+                // prepare the SQL statement for updating it
+                String update_query = "UPDATE bodymetrics SET BMI=?, classification=? WHERE id=?";
+                
+                // substituting the bmi and classification and id in the update query string
+                // and running the query.
+                try (PreparedStatement prepared_statement = db_connection.prepareStatement(update_query)) {
+                    prepared_statement.setDouble(1, bmi);
+                    prepared_statement.setString(2, bmi_classification);
+                    prepared_statement.setInt(3, id);
+                    int update_result = prepared_statement.executeUpdate();
+                    
+                    if (update_result == 0) {
+                        System.out.println("Error: Something has gone wrong! Check your database connection");
+                    }
+                }
+            }
+            
+            System.out.println("Success: All records are updated with BMI and Classification Category:");
+        } // end try block
+        
+        catch (Exception ex) {
+            ex.printStackTrace();
+        } 
     }
-
 }
