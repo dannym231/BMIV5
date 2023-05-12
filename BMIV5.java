@@ -8,12 +8,15 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 /*
- * TBD: Document
+ * This class established the connection to MYSQL data base. 
+ * It selects Id, height, and weight from the body metrics table
+ * Based on the height and weight it calculates the BMI, classification using the java methods.
+ * Updates the data base with the calculated BMI and classification values
  */
 public class BMIV5 {
    
 	/**
-	 * TBD
+	 * Given height and weight this method calculates BMI
 	 * @param height
 	 * @param weight
 	 * @return
@@ -25,7 +28,7 @@ public class BMIV5 {
     }
     
     /**
-     * 
+     * Given BMI this method returns the weight class
      * @param BMI
      * @return
      */
